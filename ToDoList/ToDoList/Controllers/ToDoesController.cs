@@ -18,10 +18,19 @@ namespace ToDoList.Controllers
         // GET: ToDoes
         public ActionResult Index()
         {
+            
+            return View();
+        }
+        private IEnumerable<ToDo> GetMyToDoes()
+        {
             string currentUserId = User.Identity.GetUserId();
             ApplicationUser currentUser = db.Users.FirstOrDefault
                 (x => x.Id == currentUserId);
-            return View(db.ToDos.ToList());
+            return db.ToDos.ToList().Where(x => x.User == currentUser);
+        }
+        public ActionResult BuildToDoTable()
+        {           
+            return PartialView("_ToDoTable", GetMyToDoes());
         }
 
         // GET: ToDoes/Details/5
@@ -65,7 +74,27 @@ namespace ToDoList.Controllers
 
             return View(toDo);
         }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult AJAXCreate([Bind(Include = "Id,Description")] ToDo toDo)
+        {
+            if (ModelState.IsValid)
+            {
+                string currentUserId = User.Identity.GetUserId();
+                ApplicationUser currentUser = db.Users.FirstOrDefault
+                    (x => x.Id == currentUserId);
+                toDo.User = currentUser;
+                toDo.IsDone = false;
+                db.ToDos.Add(toDo);
+                db.SaveChanges();
 
+            }
+
+            return PartialView(PartialView("_ToDoTable", GetMyToDoes()));
+        
+
+           
+        }
         // GET: ToDoes/Edit/5
         public ActionResult Edit(int? id)
         {
@@ -73,14 +102,13 @@ namespace ToDoList.Controllers
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            ToDo toDo = db.ToDos.Find(id);
-            if (toDo == null)
+            ToDo ToDo = db.ToDos.Find(id);
+            if (ToDo == null)
             {
                 return HttpNotFound();
             }
-            return View(toDo);
+            return View(ToDo);
         }
-
         // POST: ToDoes/Edit/5
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
         // more details see https://go.microsoft.com/fwlink/?LinkId=317598.
