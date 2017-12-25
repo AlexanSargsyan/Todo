@@ -103,10 +103,20 @@ namespace ToDoList.Controllers
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
             ToDo ToDo = db.ToDos.Find(id);
+
             if (ToDo == null)
             {
                 return HttpNotFound();
             }
+
+            string currentUserId = User.Identity.GetUserId();
+            ApplicationUser currentUser = db.Users.FirstOrDefault
+                (x => x.Id == currentUserId);
+            if(ToDo.User != currentUser)
+            {
+                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+            }
+
             return View(ToDo);
         }
         // POST: ToDoes/Edit/5
@@ -123,6 +133,27 @@ namespace ToDoList.Controllers
                 return RedirectToAction("Index");
             }
             return View(toDo);
+        }
+
+        [HttpPost]
+        public ActionResult AJAXEdit(int? id, bool value)
+        {
+            if (id == null)
+            {
+                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+            }
+            ToDo ToDo = db.ToDos.Find(id);
+            if (ToDo == null)
+            {
+                return HttpNotFound();
+            } else
+            {
+                ToDo.IsDone = value;
+                db.Entry(ToDo).State = EntityState.Modified;
+                db.SaveChanges();
+                return PartialView("_ToDoTable", GetMyToDoes());
+            }
+            
         }
 
         // GET: ToDoes/Delete/5
